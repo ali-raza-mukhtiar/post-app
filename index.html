@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Post App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #f8f9fa;
+            --primary-color: #2196f3;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --primary-color: #4CAF50;
+            margin-top: 20px;
+            margin-right: 20px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px; /* Smaller container width */
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .post-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px; /* Smaller padding */
+            margin-bottom: 12px; /* Smaller margin */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transform: translateY(0);
+            opacity: 1;
+            transition: all 0.3s ease;
+            width: 50%; /* Full width of the container */
+            height: 300px;
+        }
+
+        .post-card.remove {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .post-content {
+            margin-bottom: 8px; /* Smaller margin */
+            font-size: 14px; /* Smaller font size */
+        }
+
+        .post-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 8px; /* Smaller margin */
+            transition: transform 0.3s ease;
+            height: auto;
+            height: 250px;
+    }
+   
+
+        .post-image:hover {
+            transform: scale(1.02);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px; /* Smaller gap */
+            margin-top: 8px; /* Smaller margin */
+        }
+
+        .btn {
+            padding: 6px 12px; /* Smaller padding */
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px; /* Smaller font size */
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .color-picker {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker label {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .color-picker input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        
+        .theme-toggle {
+    position: absolute;
+    top: 30px; /* Increased space from the top */
+    right: 30px; /* Increased space from the right */
+    width: 50px; /* Bigger width */
+    height: 50px; /* Bigger height */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 20px; /* Bigger icon size */
+}
+        .image-upload {
+            position: relative;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .image-upload input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+            width: 100%;
+        }
+
+        .upload-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 2px dashed var(--primary-color);
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Social Posts</h1>
+        </div>
+
+        <!-- Dark Mode Button -->
+        <div class="theme-toggle btn-primary" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </div>
+
+        <div class="post-form">
+            <textarea id="postContent" placeholder="What's on your mind?" class="btn" style="width: 100%; height: 100px;"></textarea>
+            
+            <!-- Color Picker for Post Background -->
+            <div class="color-picker">
+                <label for="postBackgroundColor">Post Background Color:</label>
+                <input type="color" id="postBackgroundColor" value="#f8f9fa">
+            </div>
+
+            <div class="image-upload">
+                <label class="upload-label">
+                    <i class="fas fa-image"></i>
+                    <span>Add Image</span>
+                    <input type="file" id="postImage" accept="image/*">
+                </label>
+            </div>
+
+            <button onclick="createPost()" class="btn btn-primary">Post</button>
+        </div>
+
+        <div id="postsContainer"></div>
+    </div>
+
+    <script>
+        let posts = JSON.parse(localStorage.getItem('posts')) || [];
+        let currentTheme = localStorage.getItem('theme') || 'light';
+
+        // Initialize theme
+        document.body.className = currentTheme === 'dark' ? 'dark-mode' : '';
+        updateThemeIcon();
+
+        // Change Post Background Color
+        document.getElementById('postBackgroundColor').addEventListener('input', function (e) {
+            const color = e.target.value;
+            // Save the selected color to localStorage
+            localStorage.setItem('postBackgroundColor', color);
+            // Apply the color to all posts
+            document.querySelectorAll('.post-card').forEach(post => {
+                post.style.backgroundColor = color;
+            });
+        });
+
+        // Load saved post background color
+        const savedPostBackgroundColor = localStorage.getItem('postBackgroundColor');
+        if (savedPostBackgroundColor) {
+            document.getElementById('postBackgroundColor').value = savedPostBackgroundColor;
+            document.querySelectorAll('.post-card').forEach(post => {
+                post.style.backgroundColor = savedPostBackgroundColor;
+            });
+        }
+
+        function createPost() {
+            const content = document.getElementById('postContent').value;
+            const imageInput = document.getElementById('postImage');
+            const image = imageInput.files[0] ? URL.createObjectURL(imageInput.files[0]) : null;
+
+            const post = {
+                id: Date.now(),
+                content,
+                image,
+                likes: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            posts.unshift(post);
+            savePosts();
+            renderPosts();
+            resetForm();
+            animatePostAddition(post.id);
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            container.innerHTML = posts.map(post => `
+                <div class="post-card" id="post-${post.id}" style="background-color: ${localStorage.getItem('postBackgroundColor') || '#f8f9fa'}">
+                    <div class="post-content">${post.content}</div>
+                    ${post.image ? `<img src="${post.image}" class="post-image" alt="Post image">` : ''}
+                    <div class="action-buttons">
+                        <button class="btn" onclick="toggleLike(${post.id})">
+                            <i class="fas fa-heart ${post.likes ? 'liked' : ''}"></i> ${post.likes}
+                        </button>
+                        <button class="btn" onclick="deletePost(${post.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleLike(postId) {
+            posts = posts.map(post => 
+                post.id === postId ? {...post, likes: post.likes + (post.likes ? -1 : 1)} : post
+            );
+            savePosts();
+            renderPosts();
+        }
+
+        function deletePost(postId) {
+            const postElement = document.getElementById(`post-${postId}`);
+            postElement.classList.add('remove');
+            
+            setTimeout(() => {
+                posts = posts.filter(post => post.id !== postId);
+                savePosts();
+                renderPosts();
+            }, 300);
+        }
+
+        function animatePostAddition(postId) {
+            const postElement = document.getElementById(`post-${postId}`);
+            postElement.style.animation = 'slideIn 0.5s ease';
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.querySelector('.theme-toggle i');
+            icon.className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function savePosts() {
+            localStorage.setItem('posts', JSON.stringify(posts));
+        }
+
+        function resetForm() {
+            document.getElementById('postContent').value = '';
+            document.getElementById('postImage').value = '';
+        }
+
+        // Initial render
+        renderPosts();
+    </script>
+</body>
+</html>
